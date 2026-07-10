@@ -1,5 +1,9 @@
 package cns
 
+import (
+	"iter"
+)
+
 type Peeker[V any] interface {
 	Advance()
 	Peek() (val V, ok bool)
@@ -84,6 +88,25 @@ func (c *Consumer[V]) Maximum(n int, can func(V) bool) (bool, error) {
 	}
 	if v, ok := c.p.Peek(); ok && can(v) {
 		return false, nil
+	}
+	return true, c.p.Err()
+}
+
+func (c *Consumer[V]) ForEach(n int, sequence iter.Seq[V]) (bool, error) {
+	for range n {
+		for elem := range sequence {
+			value, has := c.p.Peek()
+			if !has {
+				return false, c.p.Err()
+			}
+			if any(elem) != any(value) {
+				return false, nil
+			}
+			if err := c.a.Add(value); err != nil {
+				return false, err
+			}
+			c.p.Advance()
+		}
 	}
 	return true, c.p.Err()
 }
