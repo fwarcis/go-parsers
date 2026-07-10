@@ -1,13 +1,13 @@
 package cns
 
-type Peeker[T any] interface {
+type Peeker[V any] interface {
 	Advance()
-	Peek() (T, bool)
+	Peek() (val V, ok bool)
 	Err() error
 }
 
-type Adder[T any] interface {
-	Add(T) error
+type Adder[V any] interface {
+	Add(V) error
 }
 
 type Consumer[V any] struct {
