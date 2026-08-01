@@ -1,0 +1,4 @@
+github.com/fwarcis/go-chars v0.0.0-20260730095654-43b325311324 h1:oIThj1fD/5Rbxm70CCKoM/oUoSbsG58wuPwddUzDiy4=
+github.com/fwarcis/go-chars v0.0.0-20260730095654-43b325311324/go.mod h1:Px3ClkztENclFtZMAd6X+WPBffYGwTGuYr8KhWLKXnU=
+github.com/fwarcis/go-preds v0.0.0-20260730094154-0730ece29aa3 h1:IqNbHcHm37QYKoYUZuoCNk3jvQQ/HHxjvr8FxYbupEw=
+github.com/fwarcis/go-preds v0.0.0-20260730094154-0730ece29aa3/go.mod h1:1IoDbhtg8nTBgV+a2NNwXZ3omYVnd817UIQ/zKj7qnw=
