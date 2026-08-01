@@ -1,14 +1,14 @@
 package cns
 
-type _runeWriter interface {
+type RuneWriter interface {
 	WriteRune(rn rune) (n int, err error)
 }
 
 type RuneAdder struct {
-	w _runeWriter
+	w RuneWriter
 }
 
-func NewRuneAdder(w _runeWriter) *RuneAdder {
+func NewRuneAdder(w RuneWriter) *RuneAdder {
 	return &RuneAdder{w}
 }
 
