@@ -17,101 +17,158 @@ type Adder[V any] interface {
 type Consumer[V any] struct {
 	p Peeker[V]
 	a Adder[V]
+
+	err      error
+	isFailed bool
 }
 
 func New[V any](p Peeker[V], a Adder[V]) Consumer[V] {
-	return Consumer[V]{p, a}
+	return Consumer[V]{p, a, nil, false}
 }
 
-type Result struct {
-	Ok  bool
-	Err error
-}
-
-func (c *Consumer[V]) Exactly(n int, can func(V) bool) Result {
+func (c *Consumer[V]) Exactly(
+	n int,
+	can func(V) bool,
+) (ok bool) {
+	if c.isFailed {
+		return false
+	}
+	defer c.tryToFail(&ok)
 	for range n {
-		value, has := c.p.Peek()
+		val, has := c.p.Peek()
 		if !has {
-			return Result{false, c.p.Err()}
+			c.err = c.p.Err()
+			return false
 		}
-		if !can(value) {
-			return Result{false, nil}
+		if !can(val) {
+			return false
 		}
-		if err := c.a.Add(value); err != nil {
-			return Result{false, err}
+		c.err = c.a.Add(val)
+		if c.err != nil {
+			return false
 		}
 		c.p.Advance()
 	}
-	if v, has := c.p.Peek(); has && can(v) {
-		return Result{false, nil}
+	val, has := c.p.Peek()
+	if !has {
+		c.err = c.p.Err()
+		return true
 	}
-	return Result{true, c.p.Err()}
+	return !can(val)
 }
 
-func (c *Consumer[V]) Minimum(n int, can func(V) bool) Result {
+func (c *Consumer[V]) Minimum(n int, can func(V) bool) (ok bool) {
+	if c.isFailed {
+		return false
+	}
+	defer c.tryToFail(&ok)
+	if c.err != nil {
+		return false
+	}
 	for range n {
-		value, has := c.p.Peek()
+		val, has := c.p.Peek()
 		if !has {
-			return Result{false, c.p.Err()}
+			c.err = c.p.Err()
+			return false
 		}
-		if !can(value) {
-			return Result{false, nil}
+		if !can(val) {
+			return false
 		}
-		if err := c.a.Add(value); err != nil {
-			return Result{false, err}
+		c.err = c.a.Add(val)
+		if c.err != nil {
+			return false
 		}
 		c.p.Advance()
 	}
 	for {
 		value, has := c.p.Peek()
 		if !has {
-			return Result{true, c.p.Err()}
+			c.err = c.p.Err()
+			return true
 		}
 		if !can(value) {
-			return Result{true, nil}
+			return true
 		}
-		if err := c.a.Add(value); err != nil {
-			return Result{true, err}
+		c.err = c.a.Add(value)
+		if c.err != nil {
+			return true
 		}
 		c.p.Advance()
 	}
 }
 
-func (c *Consumer[V]) Maximum(n int, can func(V) bool) Result {
+func (c *Consumer[V]) Maximum(n int, can func(V) bool) (ok bool) {
+	if c.isFailed {
+		return false
+	}
+	defer c.tryToFail(&ok)
+	if c.err != nil {
+		return true
+	}
 	for range n {
-		value, has := c.p.Peek()
+		val, has := c.p.Peek()
 		if !has {
-			return Result{true, c.p.Err()}
+			c.err = c.p.Err()
+			return true
 		}
-		if !can(value) {
-			return Result{true, nil}
+		if !can(val) {
+			return true
 		}
-		if err := c.a.Add(value); err != nil {
-			return Result{true, err}
+		c.err = c.a.Add(val)
+		if c.err != nil {
+			return true
 		}
 		c.p.Advance()
 	}
-	if v, ok := c.p.Peek(); ok && can(v) {
-		return Result{false, nil}
+	val, has := c.p.Peek()
+	if !has {
+		c.err = c.p.Err()
+		return true
 	}
-	return Result{true, c.p.Err()}
+	return !can(val)
 }
 
-func (c *Consumer[V]) ForEach(n int, sequence iter.Seq[V]) Result {
+func (c *Consumer[V]) ForEach(n int, sequence iter.Seq[V]) (ok bool) {
+	if c.isFailed {
+		return false
+	}
+	defer c.tryToFail(&ok)
+	if sequence == nil {
+		return true
+	}
+	if c.err != nil {
+		return false
+	}
 	for range n {
 		for elem := range sequence {
-			value, has := c.p.Peek()
+			val, has := c.p.Peek()
 			if !has {
-				return Result{false, c.p.Err()}
+				c.err = c.p.Err()
+				return false
 			}
-			if any(elem) != any(value) {
-				return Result{false, nil}
+			if any(elem) != any(val) {
+				return false
 			}
-			if err := c.a.Add(value); err != nil {
-				return Result{false, err}
+			c.err = c.a.Add(val)
+			if c.err != nil {
+				return false
 			}
 			c.p.Advance()
 		}
 	}
-	return Result{true, c.p.Err()}
+	return true
+}
+
+func (c *Consumer[V]) Ok() bool {
+	return !c.isFailed
+}
+
+func (c *Consumer[V]) Err() error {
+	return c.err
+}
+
+func (c *Consumer[V]) tryToFail(ok *bool) {
+	if !*ok {
+		c.isFailed = true
+	}
 }
