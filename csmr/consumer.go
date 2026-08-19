@@ -42,7 +42,7 @@ func (c *Consumer[V]) Exactly(
 	can func(V) bool,
 	mode Mode,
 ) (ok bool) {
-	if c.isFailed {
+	if c.isFailed || c.err != nil {
 		return false
 	}
 
@@ -85,8 +85,12 @@ func (c *Consumer[V]) Minimum(
 	can func(V) bool,
 	mode Mode,
 ) (ok bool) {
-	if c.isFailed || c.err != nil {
+	if c.isFailed {
 		return false
+	}
+
+	if c.err != nil {
+		return n == 0
 	}
 
 	if mode&ModeCheck == 0 {
