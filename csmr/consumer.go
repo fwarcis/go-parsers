@@ -85,16 +85,12 @@ func (c *Consumer[V]) Minimum(
 	can func(V) bool,
 	mode Mode,
 ) (ok bool) {
-	if c.isFailed {
+	if c.isFailed || c.err != nil {
 		return false
 	}
 
 	if mode&ModeCheck == 0 {
 		defer c.failIfNot(&ok)
-	}
-
-	if c.err != nil {
-		return false
 	}
 
 	for range n {
@@ -147,12 +143,12 @@ func (c *Consumer[V]) Maximum(
 		return false
 	}
 
-	if mode&ModeCheck == 0 {
-		defer c.failIfNot(&ok)
-	}
-
 	if c.err != nil {
 		return true
+	}
+
+	if mode&ModeCheck == 0 {
+		defer c.failIfNot(&ok)
 	}
 
 	for range n {
@@ -190,20 +186,16 @@ func (c *Consumer[V]) ForEach(
 	sequence iter.Seq[V],
 	mode Mode,
 ) (ok bool) {
-	if c.isFailed {
+	if c.isFailed || c.err != nil {
 		return false
-	}
-
-	if mode&ModeCheck == 0 {
-		defer c.failIfNot(&ok)
 	}
 
 	if sequence == nil {
 		return true
 	}
 
-	if c.err != nil {
-		return false
+	if mode&ModeCheck == 0 {
+		defer c.failIfNot(&ok)
 	}
 
 	for range n {
