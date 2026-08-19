@@ -22,8 +22,8 @@ type Consumer[V any] struct {
 	isFailed bool
 }
 
-func New[V any](pkr Peeker[V], adr Adder[V]) Consumer[V] {
-	return Consumer[V]{
+func New[V any](pkr Peeker[V], adr Adder[V]) *Consumer[V] {
+	return &Consumer[V]{
 		pkr: pkr,
 		adr: adr,
 	}
