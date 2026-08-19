@@ -33,7 +33,7 @@ func (c *Consumer[V]) Exactly(
 	if c.isFailed {
 		return false
 	}
-	defer c.tryToFail(&ok)
+	defer c.failIfNot(&ok)
 	for range n {
 		val, has := c.p.Peek()
 		if !has {
@@ -61,7 +61,7 @@ func (c *Consumer[V]) Minimum(n int, can func(V) bool) (ok bool) {
 	if c.isFailed {
 		return false
 	}
-	defer c.tryToFail(&ok)
+	defer c.failIfNot(&ok)
 	if c.err != nil {
 		return false
 	}
@@ -101,7 +101,7 @@ func (c *Consumer[V]) Maximum(n int, can func(V) bool) (ok bool) {
 	if c.isFailed {
 		return false
 	}
-	defer c.tryToFail(&ok)
+	defer c.failIfNot(&ok)
 	if c.err != nil {
 		return true
 	}
@@ -132,7 +132,7 @@ func (c *Consumer[V]) ForEach(n int, sequence iter.Seq[V]) (ok bool) {
 	if c.isFailed {
 		return false
 	}
-	defer c.tryToFail(&ok)
+	defer c.failIfNot(&ok)
 	if sequence == nil {
 		return true
 	}
@@ -167,7 +167,7 @@ func (c *Consumer[V]) Err() error {
 	return c.err
 }
 
-func (c *Consumer[V]) tryToFail(ok *bool) {
+func (c *Consumer[V]) failIfNot(ok *bool) {
 	if !*ok {
 		c.isFailed = true
 	}
