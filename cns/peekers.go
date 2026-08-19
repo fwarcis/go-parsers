@@ -12,7 +12,7 @@ type _runeBuffer struct {
 type RunePeeker struct {
 	r io.RuneReader
 
-	cur _runeBuffer
+	buf _runeBuffer
 	err error
 }
 
@@ -25,14 +25,14 @@ func NewRunePeeker(r io.RuneReader) *RunePeeker {
 func (p *RunePeeker) Advance() {
 	r, _, err := p.r.ReadRune()
 	p.err = err
-	p.cur = _runeBuffer{
+	p.buf = _runeBuffer{
 		rune:   r,
 		isRead: err == nil,
 	}
 }
 
 func (p *RunePeeker) Peek() (rune, bool) {
-	return p.cur.rune, p.cur.isRead
+	return p.buf.rune, p.buf.isRead
 }
 
 func (p *RunePeeker) Err() error {
