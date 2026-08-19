@@ -26,14 +26,25 @@ func New[V any](p Peeker[V], a Adder[V]) Consumer[V] {
 	return Consumer[V]{p, a, nil, false}
 }
 
+type Mode uint64
+
+const (
+	ModeCheck Mode = 1 << iota
+
+	ModeDefault Mode = 0
+)
+
 func (c *Consumer[V]) Exactly(
 	n int,
 	can func(V) bool,
+	mode Mode,
 ) (ok bool) {
 	if c.isFailed {
 		return false
 	}
-	defer c.failIfNot(&ok)
+	if mode&ModeCheck == 0 {
+		defer c.failIfNot(&ok)
+	}
 	for range n {
 		val, has := c.p.Peek()
 		if !has {
@@ -57,11 +68,17 @@ func (c *Consumer[V]) Exactly(
 	return !can(val)
 }
 
-func (c *Consumer[V]) Minimum(n int, can func(V) bool) (ok bool) {
+func (c *Consumer[V]) Minimum(
+	n int,
+	can func(V) bool,
+	mode Mode,
+) (ok bool) {
 	if c.isFailed {
 		return false
 	}
-	defer c.failIfNot(&ok)
+	if mode&ModeCheck == 0 {
+		defer c.failIfNot(&ok)
+	}
 	if c.err != nil {
 		return false
 	}
@@ -97,11 +114,17 @@ func (c *Consumer[V]) Minimum(n int, can func(V) bool) (ok bool) {
 	}
 }
 
-func (c *Consumer[V]) Maximum(n int, can func(V) bool) (ok bool) {
+func (c *Consumer[V]) Maximum(
+	n int,
+	can func(V) bool,
+	mode Mode,
+) (ok bool) {
 	if c.isFailed {
 		return false
 	}
-	defer c.failIfNot(&ok)
+	if mode&ModeCheck == 0 {
+		defer c.failIfNot(&ok)
+	}
 	if c.err != nil {
 		return true
 	}
@@ -128,11 +151,17 @@ func (c *Consumer[V]) Maximum(n int, can func(V) bool) (ok bool) {
 	return !can(val)
 }
 
-func (c *Consumer[V]) ForEach(n int, sequence iter.Seq[V]) (ok bool) {
+func (c *Consumer[V]) ForEach(
+	n int,
+	sequence iter.Seq[V],
+	mode Mode,
+) (ok bool) {
 	if c.isFailed {
 		return false
 	}
-	defer c.failIfNot(&ok)
+	if mode&ModeCheck == 0 {
+		defer c.failIfNot(&ok)
+	}
 	if sequence == nil {
 		return true
 	}
