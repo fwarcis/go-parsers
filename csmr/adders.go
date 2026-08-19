@@ -14,5 +14,6 @@ func NewRuneAdder(w RuneWriter) *RuneAdder {
 
 func (a *RuneAdder) Add(r rune) error {
 	_, err := a.w.WriteRune(r)
+
 	return err
 }

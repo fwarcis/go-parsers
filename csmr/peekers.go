@@ -10,15 +10,16 @@ type _runeBuffer struct {
 }
 
 type RunePeeker struct {
-	r io.RuneReader
-
-	buf _runeBuffer
 	err error
+
+	r   io.RuneReader
+	buf _runeBuffer
 }
 
 func NewRunePeeker(r io.RuneReader) *RunePeeker {
 	p := &RunePeeker{r: r}
 	p.Advance()
+
 	return p
 }
 
