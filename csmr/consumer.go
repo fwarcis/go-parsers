@@ -186,12 +186,16 @@ func (c *Consumer[V]) ForEach(
 	sequence iter.Seq[V],
 	mode Mode,
 ) (ok bool) {
-	if c.isFailed || c.err != nil {
+	if c.isFailed {
 		return false
 	}
 
 	if sequence == nil {
 		return true
+	}
+
+	if c.err != nil {
+		return false
 	}
 
 	if mode&ModeCheck == 0 {
