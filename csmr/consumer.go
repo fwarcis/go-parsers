@@ -31,10 +31,11 @@ func New[V any](pkr Peeker[V], adr Adder[V]) *Consumer[V] {
 
 type Mode uint64
 
+const ModeDefault Mode = 0
+
 const (
 	ModeCheck Mode = 1 << iota
-
-	ModeDefault Mode = 0
+	ModeIgnore
 )
 
 func (c *Consumer[V]) Exactly(
@@ -62,9 +63,11 @@ func (c *Consumer[V]) Exactly(
 			return false
 		}
 
-		c.err = c.adr.Add(val)
-		if c.err != nil {
-			return false
+		if mode&ModeIgnore == 0 {
+			c.err = c.adr.Add(val)
+			if c.err != nil {
+				return false
+			}
 		}
 
 		c.pkr.Advance()
@@ -109,29 +112,33 @@ func (c *Consumer[V]) Minimum(
 			return false
 		}
 
-		c.err = c.adr.Add(val)
-		if c.err != nil {
-			return false
+		if mode&ModeIgnore == 0 {
+			c.err = c.adr.Add(val)
+			if c.err != nil {
+				return false
+			}
 		}
 
 		c.pkr.Advance()
 	}
 
 	for {
-		value, has := c.pkr.Peek()
+		val, has := c.pkr.Peek()
 		if !has {
 			c.err = c.pkr.Err()
 
 			return true
 		}
 
-		if !can(value) {
+		if !can(val) {
 			return true
 		}
 
-		c.err = c.adr.Add(value)
-		if c.err != nil {
-			return true
+		if mode&ModeIgnore == 0 {
+			c.err = c.adr.Add(val)
+			if c.err != nil {
+				return false
+			}
 		}
 
 		c.pkr.Advance()
@@ -167,9 +174,11 @@ func (c *Consumer[V]) Maximum(
 			return true
 		}
 
-		c.err = c.adr.Add(val)
-		if c.err != nil {
-			return true
+		if mode&ModeIgnore == 0 {
+			c.err = c.adr.Add(val)
+			if c.err != nil {
+				return false
+			}
 		}
 
 		c.pkr.Advance()
@@ -219,9 +228,11 @@ func (c *Consumer[V]) ForEach(
 				return false
 			}
 
-			c.err = c.adr.Add(val)
-			if c.err != nil {
-				return false
+			if mode&ModeIgnore == 0 {
+				c.err = c.adr.Add(val)
+				if c.err != nil {
+					return false
+				}
 			}
 
 			c.pkr.Advance()
