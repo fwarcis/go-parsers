@@ -9,10 +9,16 @@ type Source[V any] interface {
 	// Next advances the source by one value.
 	Next()
 
-	// Peek returns the next value without advancing the source.
+	// Peek returns the current value without advancing the source.
+	// The value is retained by the source until [Source.Next] is called.
+	//
+	// 1. If ok is true, [Source.Err] must return nil.
+	//
+	// 2. If ok is false, [Source.Err] determines whether the source is exhausted or has failed.
 	Peek() (val V, ok bool)
 
-	// Err returns the source error, if any.
+	// Err returns the source error.
+	// If nil, the source is either healthy or exhausted.
 	Err() error
 }
 
