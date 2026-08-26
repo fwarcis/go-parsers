@@ -4,28 +4,31 @@ import (
 	"iter"
 )
 
-type Peeker[V any] interface {
-	Advance()
+type Source[V any] interface {
+	Next()
 	Peek() (val V, ok bool)
 	Err() error
 }
 
-type Adder[V any] interface {
-	Add(val V) error
+type Target[V any] interface {
+	Push(val V) error
 }
 
 type Consumer[V any] struct {
-	pkr Peeker[V]
-	adr Adder[V]
+	src  Source[V]
+	targ Target[V]
 
 	err      error
 	isFailed bool
 }
 
-func New[V any](pkr Peeker[V], adr Adder[V]) *Consumer[V] {
+func New[V any](
+	src Source[V],
+	targ Target[V],
+) *Consumer[V] {
 	return &Consumer[V]{
-		pkr: pkr,
-		adr: adr,
+		src:  src,
+		targ: targ,
 	}
 }
 
@@ -34,8 +37,8 @@ type Mode uint64
 const ModeDefault Mode = 0
 
 const (
-	ModeCheck Mode = 1 << iota
-	ModeIgnore
+	ModeNotFail Mode = 1 << iota
+	ModeNotPush
 )
 
 func (c *Consumer[V]) Exactly(
@@ -47,14 +50,14 @@ func (c *Consumer[V]) Exactly(
 		return false
 	}
 
-	if mode&ModeCheck == 0 {
+	if mode&ModeNotFail == 0 {
 		defer c.failIfNot(&ok)
 	}
 
 	for range n {
-		val, has := c.pkr.Peek()
+		val, has := c.src.Peek()
 		if !has {
-			c.err = c.pkr.Err()
+			c.err = c.src.Err()
 
 			return false
 		}
@@ -63,19 +66,19 @@ func (c *Consumer[V]) Exactly(
 			return false
 		}
 
-		if mode&ModeIgnore == 0 {
-			c.err = c.adr.Add(val)
+		if mode&ModeNotPush == 0 {
+			c.err = c.targ.Push(val)
 			if c.err != nil {
 				return false
 			}
 		}
 
-		c.pkr.Advance()
+		c.src.Next()
 	}
 
-	val, has := c.pkr.Peek()
+	val, has := c.src.Peek()
 	if !has {
-		c.err = c.pkr.Err()
+		c.err = c.src.Err()
 
 		return true
 	}
@@ -96,14 +99,14 @@ func (c *Consumer[V]) Minimum(
 		return n == 0
 	}
 
-	if mode&ModeCheck == 0 {
+	if mode&ModeNotFail == 0 {
 		defer c.failIfNot(&ok)
 	}
 
 	for range n {
-		val, has := c.pkr.Peek()
+		val, has := c.src.Peek()
 		if !has {
-			c.err = c.pkr.Err()
+			c.err = c.src.Err()
 
 			return false
 		}
@@ -112,20 +115,20 @@ func (c *Consumer[V]) Minimum(
 			return false
 		}
 
-		if mode&ModeIgnore == 0 {
-			c.err = c.adr.Add(val)
+		if mode&ModeNotPush == 0 {
+			c.err = c.targ.Push(val)
 			if c.err != nil {
 				return false
 			}
 		}
 
-		c.pkr.Advance()
+		c.src.Next()
 	}
 
 	for {
-		val, has := c.pkr.Peek()
+		val, has := c.src.Peek()
 		if !has {
-			c.err = c.pkr.Err()
+			c.err = c.src.Err()
 
 			return true
 		}
@@ -134,14 +137,14 @@ func (c *Consumer[V]) Minimum(
 			return true
 		}
 
-		if mode&ModeIgnore == 0 {
-			c.err = c.adr.Add(val)
+		if mode&ModeNotPush == 0 {
+			c.err = c.targ.Push(val)
 			if c.err != nil {
 				return false
 			}
 		}
 
-		c.pkr.Advance()
+		c.src.Next()
 	}
 }
 
@@ -158,14 +161,14 @@ func (c *Consumer[V]) Maximum(
 		return true
 	}
 
-	if mode&ModeCheck == 0 {
+	if mode&ModeNotFail == 0 {
 		defer c.failIfNot(&ok)
 	}
 
 	for range n {
-		val, has := c.pkr.Peek()
+		val, has := c.src.Peek()
 		if !has {
-			c.err = c.pkr.Err()
+			c.err = c.src.Err()
 
 			return true
 		}
@@ -174,19 +177,19 @@ func (c *Consumer[V]) Maximum(
 			return true
 		}
 
-		if mode&ModeIgnore == 0 {
-			c.err = c.adr.Add(val)
+		if mode&ModeNotPush == 0 {
+			c.err = c.targ.Push(val)
 			if c.err != nil {
 				return false
 			}
 		}
 
-		c.pkr.Advance()
+		c.src.Next()
 	}
 
-	val, has := c.pkr.Peek()
+	val, has := c.src.Peek()
 	if !has {
-		c.err = c.pkr.Err()
+		c.err = c.src.Err()
 
 		return true
 	}
@@ -211,15 +214,15 @@ func (c *Consumer[V]) ForEach(
 		return false
 	}
 
-	if mode&ModeCheck == 0 {
+	if mode&ModeNotFail == 0 {
 		defer c.failIfNot(&ok)
 	}
 
 	for range n {
 		for elem := range sequence {
-			val, has := c.pkr.Peek()
+			val, has := c.src.Peek()
 			if !has {
-				c.err = c.pkr.Err()
+				c.err = c.src.Err()
 
 				return false
 			}
@@ -228,14 +231,14 @@ func (c *Consumer[V]) ForEach(
 				return false
 			}
 
-			if mode&ModeIgnore == 0 {
-				c.err = c.adr.Add(val)
+			if mode&ModeNotPush == 0 {
+				c.err = c.targ.Push(val)
 				if c.err != nil {
 					return false
 				}
 			}
 
-			c.pkr.Advance()
+			c.src.Next()
 		}
 	}
 
