@@ -1,0 +1,127 @@
+package main_test
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/fwarcis/go-chars/ascii"
+	runes "github.com/fwarcis/go-chars/rns"
+	"github.com/fwarcis/go-parsers/csmr"
+	preds "github.com/fwarcis/go-preds/prds"
+)
+
+type Token struct {
+	Type  string
+	Value string
+}
+
+func TestCns(t *testing.T) {
+	t.Fail()
+
+	str := `{
+	  "string_value": "Hello",
+	  "integer_value": 2026,
+	  "float_value": 99.9,
+	  "boolean_true": true,
+	  "boolean_false": false,
+	  "null_value": null,
+	  "array_value": ["ASCII", "JSON", "Go"]
+	}`
+
+	p := csmr.NewRunePeeker(strings.NewReader(str))
+	b := &strings.Builder{}
+	a := csmr.NewRuneAdder(b)
+	c := csmr.New(p, a)
+	tokens := []Token{}
+
+	tokenType := "Object"
+	c.Exactly(1, preds.Equal('{'), csmr.ModeDefault)
+loop:
+	for c.Ok() {
+		tok := Token{
+			tokenType,
+			b.String(),
+		}
+		tokens = append(tokens, tok)
+		t.Logf("token '%s' (%s)", tok.Value, tok.Type)
+
+		b.Reset()
+
+		char, isPeeked := p.Peek()
+		if !isPeeked {
+			break loop
+		}
+
+		for isPeeked && strings.ContainsRune("\n\t ", char) {
+			p.Advance()
+			char, isPeeked = p.Peek()
+		}
+
+		switch {
+		case char == '"':
+			tokenType = "String"
+			c.Exactly(1, preds.Equal('"'), csmr.ModeDefault)
+			c.Minimum(0, preds.NotEqual('"'))
+			c.Exactly(1, preds.Equal('"'), csmr.ModeDefault)
+
+		case strings.ContainsRune("[]{}", char):
+			tokenType = "Object"
+			c.Exactly(1, preds.Equal(char), csmr.ModeDefault)
+
+		case char == ':':
+			tokenType = "Colon"
+			c.Exactly(1, preds.Equal(':'), csmr.ModeDefault)
+
+		case char == ',':
+			tokenType = "Comma"
+			c.Exactly(1, preds.Equal(','), csmr.ModeDefault)
+
+		case ascii.IsDigit(char):
+			tokenType = "Number"
+			c.Minimum(1, ascii.IsDigit)
+			if c.Exactly(1, preds.Equal('.'), csmr.ModeCheck) {
+				c.Minimum(1, ascii.IsDigit)
+			}
+
+		case char == 't':
+			tokenType = "Boolean"
+			c.ForEach(1, runes.Runes("true"))
+
+		case char == 'f':
+			tokenType = "Boolean"
+			c.ForEach(1, runes.Runes("false"))
+
+		case char == 'n':
+			tokenType = "Null"
+			c.ForEach(1, runes.Runes("null"))
+
+		default:
+			break loop
+		}
+	}
+
+	t.Log(c.Ok(), c.Err())
+	t.Log(b.String())
+	t.Log(tokens)
+	// t.Logf("'%s'", b.String())
+}
+
+func CheckAll(results ...bool) bool {
+	for _, ok := range results {
+		if !ok {
+			return false
+		}
+	}
+	return true
+}
+
+// func LogicalIf(cond, required cns.Result) cns.Result {
+// 	err := errors.Join(required.Err, cond.Err)
+// 	if !cond.Ok && required.Ok ||
+// 		cond.Ok && !required.Ok {
+// 		return cns.Result{false, err}
+// 	}
+// 	return cns.Result{
+// 		true, err,
+// 	}
+// }

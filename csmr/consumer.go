@@ -69,7 +69,11 @@ func (c *Consumer[V]) Exactly(
 	}
 
 	if mode&ModeNotFail == 0 {
-		defer c.failIfNot(&ok)
+		defer func() {
+			if !ok {
+				c.isFailed = true
+			}
+		}()
 	}
 
 	for range n {
@@ -120,7 +124,11 @@ func (c *Consumer[V]) Minimum(
 	}
 
 	if mode&ModeNotFail == 0 {
-		defer c.failIfNot(&ok)
+		defer func() {
+			if !ok {
+				c.isFailed = true
+			}
+		}()
 	}
 
 	for range n {
@@ -184,7 +192,11 @@ func (c *Consumer[V]) Maximum(
 	}
 
 	if mode&ModeNotFail == 0 {
-		defer c.failIfNot(&ok)
+		defer func() {
+			if !ok {
+				c.isFailed = true
+			}
+		}()
 	}
 
 	for range n {
@@ -238,7 +250,11 @@ func (c *Consumer[V]) ForEach(
 	}
 
 	if mode&ModeNotFail == 0 {
-		defer c.failIfNot(&ok)
+		defer func() {
+			if !ok {
+				c.isFailed = true
+			}
+		}()
 	}
 
 	for range n {
@@ -276,10 +292,4 @@ func (c *Consumer[V]) Ok() bool {
 // Err returns the current [Consumer] error.
 func (c *Consumer[V]) Err() error {
 	return c.err
-}
-
-func (c *Consumer[V]) failIfNot(ok *bool) {
-	if !*ok {
-		c.isFailed = true
-	}
 }
