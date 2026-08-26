@@ -57,11 +57,11 @@ const (
 	ModeNotPush
 )
 
-// Exactly matches exactly n consecutive values accepted by can.
-// The next value must be rejected by can or the source must be exhausted.
+// Exactly matches exactly n consecutive values accepted by isMatched.
+// The next value must be rejected by isMatched or the source must be exhausted.
 func (c *Consumer[V]) Exactly(
 	n int,
-	can func(V) bool,
+	isMatched func(V) bool,
 	mode Mode,
 ) (ok bool) {
 	if c.isFailed || c.err != nil {
@@ -84,7 +84,7 @@ func (c *Consumer[V]) Exactly(
 			return false
 		}
 
-		if !can(val) {
+		if !isMatched(val) {
 			return false
 		}
 
@@ -105,14 +105,14 @@ func (c *Consumer[V]) Exactly(
 		return true
 	}
 
-	return !can(val)
+	return !isMatched(val)
 }
 
-// Minimum matches at least n consecutive values accepted by can.
-// Matching continues until can rejects a value or the source is exhausted.
+// Minimum matches at least n consecutive values accepted by isMatched.
+// Matching continues until isMatched rejects a value or the source is exhausted.
 func (c *Consumer[V]) Minimum(
 	n int,
-	can func(V) bool,
+	isMatched func(V) bool,
 	mode Mode,
 ) (ok bool) {
 	if c.isFailed {
@@ -139,7 +139,7 @@ func (c *Consumer[V]) Minimum(
 			return false
 		}
 
-		if !can(val) {
+		if !isMatched(val) {
 			return false
 		}
 
@@ -161,7 +161,7 @@ func (c *Consumer[V]) Minimum(
 			return true
 		}
 
-		if !can(val) {
+		if !isMatched(val) {
 			return true
 		}
 
@@ -176,11 +176,11 @@ func (c *Consumer[V]) Minimum(
 	}
 }
 
-// Maximum matches at most n consecutive values accepted by can.
+// Maximum matches at most n consecutive values accepted by isMatched.
 // Fewer than n matches are valid; n+1 matching values cause failure.
 func (c *Consumer[V]) Maximum(
 	n int,
-	can func(V) bool,
+	isMatched func(V) bool,
 	mode Mode,
 ) (ok bool) {
 	if c.isFailed {
@@ -207,7 +207,7 @@ func (c *Consumer[V]) Maximum(
 			return true
 		}
 
-		if !can(val) {
+		if !isMatched(val) {
 			return true
 		}
 
@@ -228,7 +228,7 @@ func (c *Consumer[V]) Maximum(
 		return true
 	}
 
-	return !can(val)
+	return !isMatched(val)
 }
 
 // ForEach matches n repetitions of sequence against consecutive source values.
