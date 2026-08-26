@@ -29,7 +29,7 @@ type Target[V any] interface {
 }
 
 // Consumer matches values from a [Source] and
-// optionally pushes them to a [Target].
+// optionally addes them to a [Target].
 type Consumer[V any] struct {
 	src  Source[V]
 	targ Target[V]
@@ -52,15 +52,15 @@ func New[V any](
 // Mode configures [Consumer] matching behavior.
 type Mode uint64
 
-// ModeDefault enables failure propagation and value pushing.
+// ModeDefault enables failure propagation and value adding.
 const ModeDefault Mode = 0
 
 const (
 	// ModeNotFail prevents a failed match from failing the [Consumer].
 	ModeNotFail Mode = 1 << iota
 
-	// ModeNotPush prevents matched values from being pushed to the [Target].
-	ModeNotPush
+	// ModeNotAdd prevents matched values from being added to the [Target].
+	ModeNotAdd
 )
 
 // Exactly matches exactly n consecutive values accepted by isMatched.
@@ -94,7 +94,7 @@ func (c *Consumer[V]) Exactly(
 			return false
 		}
 
-		if mode&ModeNotPush == 0 {
+		if mode&ModeNotAdd == 0 {
 			c.err = c.targ.Add(val)
 			if c.err != nil {
 				return false
@@ -149,7 +149,7 @@ func (c *Consumer[V]) Minimum(
 			return false
 		}
 
-		if mode&ModeNotPush == 0 {
+		if mode&ModeNotAdd == 0 {
 			c.err = c.targ.Add(val)
 			if c.err != nil {
 				return false
@@ -171,7 +171,7 @@ func (c *Consumer[V]) Minimum(
 			return true
 		}
 
-		if mode&ModeNotPush == 0 {
+		if mode&ModeNotAdd == 0 {
 			c.err = c.targ.Add(val)
 			if c.err != nil {
 				return false
@@ -217,7 +217,7 @@ func (c *Consumer[V]) Maximum(
 			return true
 		}
 
-		if mode&ModeNotPush == 0 {
+		if mode&ModeNotAdd == 0 {
 			c.err = c.targ.Add(val)
 			if c.err != nil {
 				return false
@@ -276,7 +276,7 @@ func (c *Consumer[V]) ForEach(
 				return false
 			}
 
-			if mode&ModeNotPush == 0 {
+			if mode&ModeNotAdd == 0 {
 				c.err = c.targ.Add(val)
 				if c.err != nil {
 					return false
