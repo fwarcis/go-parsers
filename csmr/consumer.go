@@ -18,8 +18,8 @@ type Source[V any] interface {
 
 // Target accepts consumed values.
 type Target[V any] interface {
-	// Push appends val to the target.
-	Push(val V) error
+	// Add adds val to the target.
+	Add(val V) error
 }
 
 // Consumer matches values from a [Source] and
@@ -89,7 +89,7 @@ func (c *Consumer[V]) Exactly(
 		}
 
 		if mode&ModeNotPush == 0 {
-			c.err = c.targ.Push(val)
+			c.err = c.targ.Add(val)
 			if c.err != nil {
 				return false
 			}
@@ -144,7 +144,7 @@ func (c *Consumer[V]) Minimum(
 		}
 
 		if mode&ModeNotPush == 0 {
-			c.err = c.targ.Push(val)
+			c.err = c.targ.Add(val)
 			if c.err != nil {
 				return false
 			}
@@ -166,7 +166,7 @@ func (c *Consumer[V]) Minimum(
 		}
 
 		if mode&ModeNotPush == 0 {
-			c.err = c.targ.Push(val)
+			c.err = c.targ.Add(val)
 			if c.err != nil {
 				return false
 			}
@@ -212,7 +212,7 @@ func (c *Consumer[V]) Maximum(
 		}
 
 		if mode&ModeNotPush == 0 {
-			c.err = c.targ.Push(val)
+			c.err = c.targ.Add(val)
 			if c.err != nil {
 				return false
 			}
@@ -271,7 +271,7 @@ func (c *Consumer[V]) ForEach(
 			}
 
 			if mode&ModeNotPush == 0 {
-				c.err = c.targ.Push(val)
+				c.err = c.targ.Add(val)
 				if c.err != nil {
 					return false
 				}
