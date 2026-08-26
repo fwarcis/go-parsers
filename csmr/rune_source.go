@@ -1,6 +1,7 @@
 package csmr
 
 import (
+	"errors"
 	"io"
 )
 
@@ -12,23 +13,37 @@ type runeBuffer struct {
 type RuneSource struct {
 	err error
 
-	r   io.RuneReader
-	buf runeBuffer
+	scanr io.RuneScanner
+	buf   runeBuffer
 }
 
-func NewRuneSource(r io.RuneReader) *RuneSource {
-	p := &RuneSource{r: r}
+func NewRuneSource(scanr io.RuneScanner) *RuneSource {
+	p := &RuneSource{scanr: scanr}
 	p.Next()
 
 	return p
 }
 
 func (p *RuneSource) Next() {
-	rn, _, err := p.r.ReadRune()
+	rn, _, err := p.scanr.ReadRune()
 	p.err = err
 	p.buf = runeBuffer{
 		Rune:   rn,
 		IsRead: err == nil,
+	}
+}
+
+func (p *RuneSource) Unscan(stepCount int) {
+	if stepCount <= 0 {
+		return
+	}
+
+	p.err = p.scanr.UnreadRune()
+
+	for range stepCount - 1 {
+		p.err = errors.Join(
+			p.err, p.scanr.UnreadRune(),
+		)
 	}
 }
 
