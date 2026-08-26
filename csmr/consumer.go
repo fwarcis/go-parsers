@@ -55,8 +55,8 @@ func New[V any](
 // Mode configures [Consumer] matching behavior.
 type Mode uint64
 
-// ModeDefault enables failure propagation and value addition.
-const ModeDefault Mode = 0
+// DefaultMode enables failure propagation and value addition.
+const DefaultMode Mode = 0
 
 const (
 	// ModeNotFail prevents a failed match from failing the [Consumer].
