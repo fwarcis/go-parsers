@@ -15,9 +15,9 @@ type Source[V any] interface {
 	// Peek returns the current value without advancing the source.
 	// The value is retained by the source until [Source.Next] is called.
 	//
-	// 1. If ok is true, [Source.Err] must return nil.
+	// - If ok is true, [Source.Err] must return nil.
 	//
-	// 2. If ok is false, [Source.Err] determines whether the source is exhausted or has failed.
+	// - If ok is false, [Source.Err] determines whether the source is exhausted or has failed.
 	Peek() (val V, ok bool)
 
 	// Err returns the source error.
@@ -32,7 +32,7 @@ type Target[V any] interface {
 }
 
 // Consumer matches values from a [Source] and
-// optionally addes them to a [Target].
+// optionally adds them to a [Target].
 type Consumer[V any] struct {
 	src  Source[V]
 	targ Target[V]
@@ -55,7 +55,7 @@ func New[V any](
 // Mode configures [Consumer] matching behavior.
 type Mode uint64
 
-// ModeDefault enables failure propagation and value adding.
+// ModeDefault enables failure propagation and value addition.
 const ModeDefault Mode = 0
 
 const (
