@@ -9,6 +9,9 @@ type Source[V any] interface {
 	// Next advances the source by one value.
 	Next()
 
+	// Unscan restores the source state by undoing stepCount [Source.Next] calls.
+	Unscan(stepCount int)
+
 	// Peek returns the current value without advancing the source.
 	// The value is retained by the source until [Source.Next] is called.
 	//
@@ -61,6 +64,9 @@ const (
 
 	// ModeNotAdd prevents matched values from being added to the [Target].
 	ModeNotAdd
+
+	// ModeUnscan restores the [Source] state after [Consumer] matching methods.
+	ModeUnscan
 )
 
 // Exactly matches exactly n consecutive values accepted by isMatched.
@@ -82,7 +88,15 @@ func (c *Consumer[V]) Exactly(
 		}()
 	}
 
-	for range n {
+	stepCount := 0
+
+	if mode&ModeUnscan != 0 {
+		defer func() {
+			c.src.Unscan(stepCount)
+		}()
+	}
+
+	for ; stepCount < n; stepCount++ {
 		val, has := c.src.Peek()
 		if !has {
 			c.err = c.src.Err()
@@ -137,7 +151,15 @@ func (c *Consumer[V]) Minimum(
 		}()
 	}
 
-	for range n {
+	stepCount := 0
+
+	if mode&ModeUnscan != 0 {
+		defer func() {
+			c.src.Unscan(stepCount)
+		}()
+	}
+
+	for ; stepCount < n; stepCount++ {
 		val, has := c.src.Peek()
 		if !has {
 			c.err = c.src.Err()
@@ -159,7 +181,7 @@ func (c *Consumer[V]) Minimum(
 		c.src.Next()
 	}
 
-	for {
+	for ; ; stepCount++ {
 		val, has := c.src.Peek()
 		if !has {
 			c.err = c.src.Err()
@@ -205,7 +227,15 @@ func (c *Consumer[V]) Maximum(
 		}()
 	}
 
-	for range n {
+	stepCount := 0
+
+	if mode&ModeUnscan != 0 {
+		defer func() {
+			c.src.Unscan(stepCount)
+		}()
+	}
+
+	for ; stepCount < n; stepCount++ {
 		val, has := c.src.Peek()
 		if !has {
 			c.err = c.src.Err()
@@ -263,6 +293,14 @@ func (c *Consumer[V]) ForEach(
 		}()
 	}
 
+	stepCount := 0
+
+	if mode&ModeUnscan != 0 {
+		defer func() {
+			c.src.Unscan(stepCount)
+		}()
+	}
+
 	for range n {
 		for elem := range sequence {
 			val, has := c.src.Peek()
@@ -284,6 +322,8 @@ func (c *Consumer[V]) ForEach(
 			}
 
 			c.src.Next()
+
+			stepCount++
 		}
 	}
 
